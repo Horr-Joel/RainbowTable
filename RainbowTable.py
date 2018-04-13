@@ -4,6 +4,7 @@ from SM3 import sm3
 import hashlib
 from multiprocessing import Process
 import os
+import time
 
 keys = '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()-+=[]<>/?|'
 tran16to2 = {'0': '0000', '1': '0001', '2': '0010', '3': '0011', '4': '0100', '5': '0101', '6': '0110', '7': '0111',
@@ -55,39 +56,43 @@ def single_genTable(len, num, filename):
         line += P
         table.append(line)
 
-    f = open(filename, 'w')
+    f = open(filename, 'a')
     for line in table:
         f.write(line + '\n')
     f.close()
     print("Generate Table %s succeed!" % filename)
 
 
-# 四线程生成彩虹表
+# 六线程生成彩虹表
 def multi_genTable(len, num):
-    # 4个线程生成4个链长为len，行数为num/4的csv文件
-    t1 = Process(target=single_genTable, args=(len, int(num / 4), "part1.csv"))
-    t2 = Process(target=single_genTable, args=(len, int(num / 4), "part2.csv"))
-    t3 = Process(target=single_genTable, args=(len, int(num / 4), "part3.csv"))
-    t4 = Process(target=single_genTable, args=(len, int(num / 4), "part4.csv"))
-
+    # 6个线程生成6个链长为len，行数为num/6的csv文件
+    t1 = Process(target=single_genTable, args=(len, int(num / 6), "part1.csv"))
+    t2 = Process(target=single_genTable, args=(len, int(num / 6), "part2.csv"))
+    t3 = Process(target=single_genTable, args=(len, int(num / 6), "part3.csv"))
+    t4 = Process(target=single_genTable, args=(len, int(num / 6), "part4.csv"))
+    t5 = Process(target=single_genTable, args=(len, int(num / 6), "part5.csv"))
+    t6 = Process(target=single_genTable, args=(len, int(num / 6), "part6.csv"))
     # 开始运行线程
     t1.start()
     t2.start()
     t3.start()
     t4.start()
-
+    t5.start()
+    t6.start()
     # 等待各个线程运行完毕
     t1.join()
     t2.join()
     t3.join()
     t4.join()
+    t5.join()
+    t6.join()
 
     # 如果上次运行生成了RainbowTable.csv，则删除上次运行生成的文件
     if os.path.exists("RainbowTable.csv"):
         os.remove("RainbowTable.csv")
 
-    # 将4个csv合并为一个num行的csv，为最终彩虹表
-    for i in ["part1.csv", "part2.csv", "part3.csv", "part4.csv"]:
+    # 将6个csv合并为一个num行的csv，为最终彩虹表
+    for i in ["part1.csv", "part2.csv", "part3.csv", "part4.csv", "part5.csv", "part6.csv"]:
         fr = open(i, 'r').read()
         with open('RainbowTable.csv', 'a') as f:
             f.write(fr)
@@ -110,7 +115,6 @@ def match(hash, len):
     # 先验证第一轮,此时hash做R运算后的值与链尾比较
     P = R(hash)
     count = int((len - 1) / 2 - 1)
-    print(count)
     for start, end in table:
         if P == end:
             find = True
@@ -155,12 +159,19 @@ def match(hash, len):
 
 if __name__ == '__main__':
     # 如果已有彩虹表且名为RainbowTable.csv，则将下面生成函数注释
-    # 4线程生成彩虹表
-    multi_genTable(1001, 4300000)
-
+    # 6线程生成彩虹表
+    start = time.time()
+    multi_genTable(1001, 120000)
+    end = time.time()
+    print ("Generating Table costs %f" % (end - start))
     # 执行彩虹表搜索匹配，此表链长为1001
+    start = time.time()
+
+    # 测试破解一个hash
     re = match('bb0c13584f3dd789234cd3e6cf8247e0ab8ce8be4574127ecdffffb0eaeb76cc', 1001)
+    end = time.time()
     if re == -1:
         print("no password found")
     else:
         print(re)
+    print ("Crack costs %f" % (end - start))
